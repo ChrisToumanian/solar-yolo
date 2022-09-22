@@ -119,6 +119,12 @@ python solar_scripts/convert_to_yolo_coordinates.py 224 224 75 70 59 64
 > 0.46651785714285715 0.45535714285714285 0.26339285714285715 0.2857142857142857
 ```
 
+4. Annotations may be tested using `test_annotations.py`. This outputs the provided training image with bounding boxes drawn using its associated annotations file.
+
+```
+python solar_scripts/test_annotations.py 0000
+```
+
 ## 🏋️Train a new model for sunspot detection
 
 The training images must be saved within `data/images/training/` and `data/images/validation/`. The training label text files must be saved within `data/labels/training/` and `data/labels/validation/`. Ideally, 10% of the images and their corresponding labels will be located in the validation directory with a large dataset, but with a small dataset you may place all images and labels in validation as well.
