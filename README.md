@@ -148,7 +148,7 @@ python train.py --img 224 --data dataset.yaml --weights yolov5l.pt
 You can run feature detection on any FITS PNG image by running this command, using `detect.py`. This optionally saves crops of each sunspot and saves them to the `runs/detect/exp/` along with the output text file.
 
 ```
-python detect.py --weights runs/train/exp/weights/best.pt --img 4090 --conf 0.2 --source data/fits_images/20160920/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.png --save-txt --save-conf --save-crop --hide-labels --line-thickness 1
+python detect.py --weights runs/train/exp/weights/best.pt --img 4096 --conf 0.2 --source data/fits_images/20160920/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.png --save-txt --save-conf --save-crop --hide-labels --line-thickness 1
 ```
 
 ## ☀️Convert output to delivery format
@@ -165,7 +165,7 @@ label,confidence,x_center_relative,y_center_relative,width_relative,height_relat
 Run the `convert_coordinates.py` script to convert YOLOv5’s output to our own format:
 
 ```
-python solar_scripts/convert_coordinates.py -f runs/detect/exp/labels/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.txt -o runs/detect/exp/labels/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.csv -w 4090 -h 4090 -v -H -d ","
+python solar_scripts/convert_coordinates.py -f runs/detect/exp/labels/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.txt -o runs/detect/exp/labels/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.csv -w 4096 -h 4096 -v -H -d ","
 ```
 
 Run this to add centroids and save the final file to be delivered:
