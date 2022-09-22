@@ -1,0 +1,10 @@
+# labels: /data/labels/training/
+# labels_val: /data/labels/validation/
+train: data/images/training/
+val: data/images/validation/
+
+# number of classes
+nc: 1
+
+# class names
+names: ['sunspot']
