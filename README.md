@@ -37,6 +37,7 @@ pip install -r requirements.txt
 > :warning: **If you have an Nvidia GeForce 30 series GPU**: You need to install a special version of PyTorch that's cu116 compatible. Download the wheel for TorchVision from http://download.pytorch.org/whl/torchvision/
 
 ```
+# Install GeForce 30 series modules
 pip install --extra-index-url https://download.pytorch.org/whl/cu116/ "torch==1.12.1+cu116"
 pip install torchvision-0.13.1+cu116-cp310-cp310-linux_x86_64.whl
 ```
