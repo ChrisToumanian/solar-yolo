@@ -4,7 +4,7 @@ import cv2
 source = sys.argv[1]
 image_path = 'data/images/training/'
 labels_path = 'data/labels/training/'
-filename = 'test_annotation_image.jpg'
+filename = f'{image_path}{source}_test.jpg'
 
 print(f"Reading: {image_path}{source}.jpg")
 image = cv2.imread(f"{image_path}{source}.jpg")
@@ -14,7 +14,6 @@ colors = [(0, 0, 255)]
 
 height, width, _ = image.shape
 
-T=[]
 with open(f"{labels_path}{source}.txt", "r") as file1:
     for line in file1.readlines():
         split = line.split(" ")
