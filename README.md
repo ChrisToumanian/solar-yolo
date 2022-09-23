@@ -22,7 +22,7 @@ python -m venv venv
 . venv/bin/activate
 ```
 
-If you’re using PowerShell in Windows, use this command to activate the environment:
+If you’re using PowerShell in Windows, use this command to activate the environment.
 
 ```
 .\venv\Scripts\activate
