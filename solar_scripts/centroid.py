@@ -41,8 +41,8 @@ def save_image(vertices, centroids, image, output_path):
         image[vertices[i][1]][vertices[i][0]] = [255, 0, 0]
 
     # Save image
-    print(f"Saving {output_path.rsplit('.', 1)[0]}.centroids.png")
-    cv2.imwrite(f"{output_path.rsplit('.', 1)[0]}.centroids.png", image)
+    print(f"Saving {output_path.rsplit('.', 1)[0]}.png")
+    cv2.imwrite(f"{output_path.rsplit('.', 1)[0]}.png", image)
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
