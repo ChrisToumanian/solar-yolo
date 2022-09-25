@@ -49,16 +49,16 @@ def open_image(image_path):
     return image
 
 def find_centroid(sunspot, image):
-    x = sunspot["x"]
-    y = sunspot["y"]
+    offset_x = sunspot['x']
+    offset_y = sunspot['y']
     w = int(sunspot["width"])
     h = int(sunspot["height"])
     image_width, image_height = image.size
 
-    print(f"Processing sunspot {x}, {y}")
+    print(f"Processing sunspot {offset_x}, {offset_y}")
 
     # Crop image
-    box = (x, y, x+w, y+h)
+    box = (offset_x, offset_y, offset_x+w, offset_y+h)
     im = image.crop(box)
 
     # List single values from RGBA pixels
@@ -117,17 +117,18 @@ def find_centroid(sunspot, image):
 
     # # Count vertices and denote number by n
     n = len(vertices)
+    print(vertices)
+    print(x, y)
 
     # # Add x & y values from vertices and divide by sum of n
     sum_x, sum_y = [ sum(row[i] for row in vertices) for i in range(len(vertices[0])) ]
     x_centroid = sum_x / n
     y_centroid = sum_y / n
 
-    return x + x_centroid, y + y_centroid
+    return offset_x + x_centroid, offset_y + y_centroid
 
 def save_output(sunspots_df, output_path):
     print(f"Saving {output_path}")
-    #print(sunspots_df)
     sunspots_df.to_csv(output_path, index=False)
 
 if __name__ == '__main__':
