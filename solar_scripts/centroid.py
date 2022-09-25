@@ -25,8 +25,6 @@ def main(args):
         vertices.extend(verts)
         centroids.append((int(x_centroid), int(y_centroid)))
 
-    print(centroids)
-
     # Save output files
     save_image(vertices, centroids, image, args.output)
     save_output(sunspots_df, args.output)
@@ -74,7 +72,6 @@ def read_csv(csv_path):
 
 def open_image(image_path):
     print(f"Reading {image_path}")
-    #image = Image.open(image_path)
     image = cv2.imread(image_path)
     return image
 
@@ -157,10 +154,6 @@ def find_centroid(sunspot, image, output_path):
     np.set_printoptions(precision=2, linewidth=200)
     print(f"Sunspot {offset_x}, {offset_y}")
     print(arr)
-    print(vertices)
-    for i in range(len(vertices)):
-        print(vertices[i][0] + offset_x, vertices[i][1] + offset_y)
-    print(contour_arr)
 
     return offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, vertices
 
