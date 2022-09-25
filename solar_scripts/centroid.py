@@ -10,9 +10,11 @@ def main(args):
     image = open_image(args.image)
 
     for index, row in sunspots_df.iterrows():
-        x_centroid, y_centroid = find_centroid(row, image)
+        x_centroid, y_centroid, min_brightness, max_brightness = find_centroid(row, image)
         sunspots_df.at[index, 'x_centroid'] = x_centroid
         sunspots_df.at[index, 'y_centroid'] = y_centroid
+        sunspots_df.at[index, 'min_brightness'] = min_brightness
+        sunspots_df.at[index, 'max_brightness'] = max_brightness
     
     save_output(sunspots_df, args.output)
 
@@ -39,8 +41,9 @@ def read_csv(csv_path):
     df = df.rename(columns={"x_1": "x", "y_1": "y"})
     df["x_centroid"] = 0
     df["y_centroid"] = 0
+    df["min_brightness"] = 0
+    df["max_brightness"] = 0
     df.sort_values('confidence')
-    print(df)
     return df
 
 def open_image(image_path):
@@ -54,8 +57,6 @@ def find_centroid(sunspot, image):
     w = int(sunspot["width"])
     h = int(sunspot["height"])
     image_width, image_height = image.size
-
-    print(f"Processing sunspot {offset_x}, {offset_y}")
 
     # Crop image
     box = (offset_x, offset_y, offset_x+w, offset_y+h)
@@ -104,10 +105,6 @@ def find_centroid(sunspot, image):
             else:
                 contour_arr[y, x] = 0
 
-    # Print contour array
-    np.set_printoptions(linewidth=200, precision=1)
-    print(contour_arr)
-
     # Create vertices from contour
     vertices = []
     for y in range(h):
@@ -117,18 +114,17 @@ def find_centroid(sunspot, image):
 
     # # Count vertices and denote number by n
     n = len(vertices)
-    print(vertices)
-    print(x, y)
 
     # # Add x & y values from vertices and divide by sum of n
     sum_x, sum_y = [ sum(row[i] for row in vertices) for i in range(len(vertices[0])) ]
     x_centroid = sum_x / n
     y_centroid = sum_y / n
 
-    return offset_x + x_centroid, offset_y + y_centroid
+    return offset_x + x_centroid, offset_y + y_centroid, min_value, max_value
 
 def save_output(sunspots_df, output_path):
     print(f"Saving {output_path}")
+    print(sunspots_df)
     sunspots_df.to_csv(output_path, index=False)
 
 if __name__ == '__main__':
