@@ -2,7 +2,7 @@ import os
 import sys
 import argparse
 import pandas as pd
-from numpy import *
+import numpy as np
 from PIL import Image
 
 def main(args):
@@ -51,8 +51,8 @@ def open_image(image_path):
 def find_centroid(sunspot, image):
     x = sunspot["x"]
     y = sunspot["y"]
-    w = sunspot["width"]
-    h = sunspot["height"]
+    w = int(sunspot["width"])
+    h = int(sunspot["height"])
     image_width, image_height = image.size
 
     print(f"Processing sunspot {x}, {y}")
@@ -63,22 +63,62 @@ def find_centroid(sunspot, image):
 
     # List single values from RGBA pixels
     pixels = list(im.getdata())
-    data = []
+    pixel_data = []
     for i in range(len(pixels)):
-        data.append(pixels[i][0])
+        pixel_data.append(pixels[i][0])
 
-    # Determine vertices around sunspot
-    vertices = [
-        (0,0),
-        (w,0),
-        (w,h),
-        (0,h)
-    ]
+    # Min-max normalize
+    data = pixel_data
+    min_value = min(data)
+    max_value = max(data)
 
-    # Count vertices and denote number by n
+    for i in range(len(data)):
+        data[i] = (data[i] - min_value) / (max_value - min_value)
+
+    # Invert array
+    for i in range(len(data)):
+        data[i] = 1 - data[i]
+
+    # Threshold cut-off
+    threshold = 0.65
+    for i in range(len(data)):
+        if data[i] < threshold:
+            data[i] = 0
+
+    # Reshape to 2D array
+    arr = np.reshape(data, (-1, w))
+
+    # Find Contours
+    contour_arr = np.copy(arr)
+    for y in range(h):
+        for x in range(w):
+            if (arr[y, x] > 0
+                and (
+                    (x+1 > w-1 or arr[y, x+1] == 0)
+                    or (x-1 < 0 or arr[y, x-1] == 0)
+                    or (y+1 > h-1 or arr[y+1, x] == 0)
+                    or (y-1 < 0 or arr[y-1, x] == 0)
+                )
+            ):
+                contour_arr[y, x] = 1
+            else:
+                contour_arr[y, x] = 0
+
+    # Print contour array
+    np.set_printoptions(linewidth=200, precision=1)
+    print(contour_arr)
+
+    # Create vertices from contour
+    vertices = []
+    for y in range(h):
+        for x in range(w):
+            if contour_arr[y, x] == 1:
+                vertices.append((x, y))
+
+    # # Count vertices and denote number by n
     n = len(vertices)
 
-    # Add x & y values from vertices and divide by sum of n
+    # # Add x & y values from vertices and divide by sum of n
     sum_x, sum_y = [ sum(row[i] for row in vertices) for i in range(len(vertices[0])) ]
     x_centroid = sum_x / n
     y_centroid = sum_y / n
@@ -87,7 +127,7 @@ def find_centroid(sunspot, image):
 
 def save_output(sunspots_df, output_path):
     print(f"Saving {output_path}")
-    print(sunspots_df)
+    #print(sunspots_df)
     sunspots_df.to_csv(output_path, index=False)
 
 if __name__ == '__main__':
