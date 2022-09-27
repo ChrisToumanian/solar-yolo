@@ -13,7 +13,7 @@ def main(args):
     centroids = []
 
     for index, row in sunspots_df.iterrows():
-        x_centroid, y_centroid, min_brightness, max_brightness, verts = find_centroid(row, image, args.output)
+        x_centroid, y_centroid, min_brightness, max_brightness, verts = find_centroid(row, image, args.output, args.threshold, args.adjacent_elements)
         sunspots_df.at[index, 'x_centroid'] = x_centroid
         sunspots_df.at[index, 'y_centroid'] = y_centroid
         sunspots_df.at[index, 'min_brightness'] = min_brightness
@@ -26,7 +26,8 @@ def main(args):
         centroids.append((int(x_centroid), int(y_centroid)))
 
     # Save output files
-    save_image(vertices, centroids, image, args.output)
+    if args.output_centroid_image:
+        save_image(vertices, centroids, image, args.output)
     save_output(sunspots_df, args.output)
 
 def save_image(vertices, centroids, image, output_path):
@@ -47,6 +48,9 @@ def parse_arguments():
     parser.add_argument("-c", "--csv", help="Input CSV file", type=str, required=True)
     parser.add_argument("-i", "--image", help="Input image file", type=str, required=True)
     parser.add_argument("-o", "--output", help="Output CSV file", type=str, required=True)
+    parser.add_argument("-v", "--output_centroid_image", help="Output image of vertices and centroids", action='store_true')
+    parser.add_argument("-t", "--threshold", help="Threshold between sunspot and photosphere", type=float, required=False, default=0.3)
+    parser.add_argument("-a", "--adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=2)
     args = parser.parse_args()
     return args
 
@@ -75,9 +79,8 @@ def open_image(image_path):
     image = cv2.imread(image_path)
     return image
 
-def find_centroid(sunspot, image, output_path):
-    threshold = 0.4
-    min_edges = 2
+def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
+    min_edges = adjacent_elements
     offset_x = int(sunspot['x'])
     offset_y = int(sunspot['y'])
     w = int(sunspot["width"])
