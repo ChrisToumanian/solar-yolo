@@ -31,6 +31,7 @@ If you’re using PowerShell in Windows, use this command to activate the enviro
 4. Install the required Python modules contained in requirements.txt.
 
 ```
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
