@@ -39,8 +39,13 @@ pip install -r requirements.txt
 
 ```
 # Install GeForce 30 series modules
+wget http://download.pytorch.org/whl/cu116/torchvision-0.13.1%2Bcu116-cp310-cp310-linux_x86_64.whl
 pip install --extra-index-url https://download.pytorch.org/whl/cu116/ "torch==1.12.1+cu116"
 pip install torchvision-0.13.1+cu116-cp310-cp310-linux_x86_64.whl
+
+# Check Installation
+python -c "import torch; print(torch.max(torch.rand((30,30),device='cuda')))"
+nvidia-smi
 ```
 
 ## 🧪Test Installation
