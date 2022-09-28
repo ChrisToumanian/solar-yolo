@@ -35,7 +35,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-> :warning: **If you have an Nvidia GeForce 30 series GPU**: You need to install a special version of PyTorch that's cu116 compatible. Download the wheel for TorchVision from http://download.pytorch.org/whl/torchvision/
+> :warning: **If you have an Nvidia GeForce 30 series GPU**: You need to install a special version of PyTorch that's cu116 compatible. Download the wheel for TorchVision from http://download.pytorch.org/whl/torchvision/. If `nvidia-smi` returns an error reinstall your GeForce driver in Windows.
 
 ```
 # Install GeForce 30 series modules
