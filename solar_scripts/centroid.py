@@ -32,13 +32,13 @@ def main(args):
     save_output(sunspots_df, args.output)
 
 def save_image(vertices, centroids, image, output_path):
-    # Draw centroid on cropped image as a red pixel
-    for i in range(len(centroids)):
-        image[centroids[i][1]][centroids[i][0]] = [0, 0, 255]
-
     # Draw vertices on cropped image as blue pixels
     for i in range(len(vertices)):
         image[vertices[i][1]][vertices[i][0]] = [255, 0, 0]
+    
+    # Draw centroid on cropped image as a red pixel
+    for i in range(len(centroids)):
+        image[centroids[i][1]][centroids[i][0]] = [0, 0, 255]
 
     # Save image
     print(f"Saving {output_path.rsplit('.', 1)[0]}.png")
