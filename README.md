@@ -181,8 +181,8 @@ Run the `convert_coordinates.py` script to convert YOLOv5’s output to our own 
 python solar_scripts/convert_coordinates.py -f runs/detect/exp/labels/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.txt -o runs/detect/exp/labels/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.csv -w 4096 -h 4096 -v -H -d ","
 ```
 
-Run this to add centroids and save the final file to be delivered:
+Run this to add centroids and save the final file to be delivered.
 
 ```
-python3 solar_scripts/centroid.py -c runs/detect/exp/labels/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.csv -i data/fits_images/20160920/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.png -o runs/detect/exp/hmi.im_45s.20160920_000000_TAI.2.continuum.fits_centroids.csv -v -t 0.45 -a 1
+python3 solar_scripts/centroid.py -c runs/detect/exp/labels/hmi.im_45s.20160920_000000_TAI.2.continuum.fits.csv -f data/fits_images/20160920/hmi.im_45s.20160920_000000_TAI.2.continuum.fits -o runs/detect/exp/hmi.im_45s.20160920_000000_TAI.2.continuum.fits_centroids.csv -v -t 0.6 -a 1
 ```

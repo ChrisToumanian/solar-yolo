@@ -5,10 +5,12 @@ import pandas as pd
 import numpy as np
 import cv2
 import re
+import matplotlib.pyplot as plt
+from astropy.io import fits
 
 def main(args):
     sunspots_df = read_csv(args.csv)
-    image = open_image(args.image)
+    image = open_fits_image(args.image, args.fits_header)
     vertices = []
     centroids = []
 
@@ -31,7 +33,12 @@ def main(args):
         save_image(vertices, centroids, image, args.output)
     save_output(sunspots_df, args.output)
 
-def save_image(vertices, centroids, image, output_path):
+def save_image(vertices, centroids, fits_image, output_path):
+    # Convert image to 0-255 RGB
+    filepath = f"{output_path.rsplit('.', 1)[0]}.png"
+    plt.imsave(filepath, fits_image, cmap='gray', vmin=np.nanmin(fits_image), vmax=np.nanmax(fits_image))
+    image = cv2.imread(filepath)
+
     # Draw vertices on cropped image as blue pixels
     for i in range(len(vertices)):
         image[vertices[i][1]][vertices[i][0]] = [255, 0, 0]
@@ -41,17 +48,18 @@ def save_image(vertices, centroids, image, output_path):
         image[centroids[i][1]][centroids[i][0]] = [0, 0, 255]
 
     # Save image
-    print(f"Saving {output_path.rsplit('.', 1)[0]}.png")
-    cv2.imwrite(f"{output_path.rsplit('.', 1)[0]}.png", image)
+    print(f"Saving {filepath}")
+    cv2.imwrite(filepath, image)
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--csv", help="Input CSV file", type=str, required=True)
-    parser.add_argument("-i", "--image", help="Input image file", type=str, required=True)
+    parser.add_argument("-i", "--image", help="Input fits image file", type=str, required=True)
     parser.add_argument("-o", "--output", help="Output CSV file", type=str, required=True)
     parser.add_argument("-v", "--output_centroid_image", help="Output image of vertices and centroids", action='store_true')
     parser.add_argument("-t", "--threshold", help="Threshold between sunspot and photosphere", type=float, required=False, default=0.3)
     parser.add_argument("-a", "--adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=2)
+    parser.add_argument("-f", "--fits_header", help="Header location of image data in fits file", type=int, required=False, default=0)
     args = parser.parse_args()
     return args
 
@@ -76,6 +84,14 @@ def read_csv(csv_path):
     df.sort_values('confidence')
     return df
 
+def open_fits_image(image_path, image_data_header_location):
+    print(f"Reading {image_path}")
+    image_file = open(image_path, "rb")
+    hdu_list = fits.open(image_file)
+    hdu_list.info()
+    image_data = hdu_list[image_data_header_location].data
+    return image_data
+
 def open_image(image_path):
     print(f"Reading {image_path}")
     image = cv2.imread(image_path)
@@ -87,7 +103,9 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     offset_y = int(sunspot['y'])
     w = int(sunspot["width"])
     h = int(sunspot["height"])
-    image_width, image_height, channels = image.shape
+    image_width, image_height = image.shape
+    
+    print(image[1000, 1000])
 
     # Crop image
     im = image[offset_y:offset_y+h, offset_x:offset_x+w]
@@ -96,12 +114,13 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     pixel_data = []
     for x in range(0, im.shape[0]):
         for y in range(0, im.shape[1]):
-            pixel_data.append(im[x, y][0])
+            pixel_data.append(im[x, y])
 
     # Min-max normalize
     data = pixel_data
     min_value = min(data)
     max_value = max(data)
+    print(f"Min/Max values: {min_value}, {max_value}")
 
     for i in range(len(data)):
         data[i] = (data[i] - min_value) / (max_value - min_value)
