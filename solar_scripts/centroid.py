@@ -9,7 +9,7 @@ from astropy.io import fits
 
 def main(args):
     sunspots_df = read_csv(args.csv)
-    image = open_image(args.image)
+    image = open_image(args.image, args.fits_header)
     vertices = []
     centroids = []
 
@@ -53,6 +53,7 @@ def parse_arguments():
     parser.add_argument("-v", "--output_centroid_image", help="Output image of vertices and centroids", action='store_true')
     parser.add_argument("-t", "--threshold", help="Threshold between sunspot and photosphere", type=float, required=False, default=0.3)
     parser.add_argument("-a", "--adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=2)
+    parser.add_argument("-f", "--fits_header", help="Header location of image data in fits file", type=int, required=False, default=0)
     args = parser.parse_args()
     return args
 
@@ -77,12 +78,12 @@ def read_csv(csv_path):
     df.sort_values('confidence')
     return df
 
-def open_image(image_path):
+def open_image(image_path, image_data_header_location):
     print(f"Reading {image_path}")
     image_file = open(image_path, "rb")
     hdu_list = fits.open(image_file)
     hdu_list.info()
-    image_data = hdu_list[0].data
+    image_data = hdu_list[image_data_header_location].data
     return image_data
 
 def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
