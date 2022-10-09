@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import cv2
 import re
+from astropy.io import fits
 
 def main(args):
     sunspots_df = read_csv(args.csv)
@@ -78,8 +79,11 @@ def read_csv(csv_path):
 
 def open_image(image_path):
     print(f"Reading {image_path}")
-    image = cv2.imread(image_path)
-    return image
+    image_file = open(image_path, "rb")
+    hdu_list = fits.open(image_file)
+    hdu_list.info()
+    image_data = hdu_list[0].data
+    return image_data
 
 def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     min_edges = adjacent_elements
