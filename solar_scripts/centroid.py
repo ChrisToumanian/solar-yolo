@@ -13,7 +13,8 @@ def main(args):
     centroids = []
 
     for index, row in sunspots_df.iterrows():
-        x_centroid, y_centroid, min_brightness, max_brightness, verts = find_centroid(row, image, args.output, args.threshold, args.adjacent_elements)
+        area, x_centroid, y_centroid, min_brightness, max_brightness, verts = find_centroid(row, image, args.output, args.threshold, args.adjacent_elements)
+        sunspots_df.at[index, 'area'] = area
         sunspots_df.at[index, 'x_centroid'] = x_centroid
         sunspots_df.at[index, 'y_centroid'] = y_centroid
         sunspots_df.at[index, 'min_brightness'] = min_brightness
@@ -31,13 +32,13 @@ def main(args):
     save_output(sunspots_df, args.output)
 
 def save_image(vertices, centroids, image, output_path):
-    # Draw centroid on cropped image as a red pixel
-    for i in range(len(centroids)):
-        image[centroids[i][1]][centroids[i][0]] = [0, 0, 255]
-
     # Draw vertices on cropped image as blue pixels
     for i in range(len(vertices)):
         image[vertices[i][1]][vertices[i][0]] = [255, 0, 0]
+    
+    # Draw centroid on cropped image as a red pixel
+    for i in range(len(centroids)):
+        image[centroids[i][1]][centroids[i][0]] = [0, 0, 255]
 
     # Save image
     print(f"Saving {output_path.rsplit('.', 1)[0]}.png")
@@ -67,6 +68,7 @@ def read_csv(csv_path):
         'y_2'
     ])
     df = df.rename(columns={"x_1": "x", "y_1": "y"})
+    df["area"] = 0
     df["x_centroid"] = 0
     df["y_centroid"] = 0
     df["min_brightness"] = 0
@@ -116,6 +118,9 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     # Reshape to 2D array
     arr = np.reshape(data, (-1, w))
 
+    # Find Area
+    area_arr = np.count_nonzero(arr)
+
     # Find Contours
     contour_arr = np.copy(arr)
     for y in range(h):
@@ -158,9 +163,11 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     print(f"Sunspot {offset_x}, {offset_y}")
     print(arr)
 
-    return offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, vertices
+    return area_arr, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, vertices
 
 def save_output(sunspots_df, output_path):
+    # Sort by area
+    sunspots_df = sunspots_df.sort_values('area', ascending=False)
     print(f"Saving {output_path}")
     print(sunspots_df)
     sunspots_df.to_csv(output_path, index=False)
