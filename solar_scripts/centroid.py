@@ -15,8 +15,9 @@ def main(args):
     centroids = []
 
     for index, row in sunspots_df.iterrows():
-        area, x_centroid, y_centroid, min_brightness, max_brightness, verts = find_centroid(row, image, args.output, args.threshold, args.adjacent_elements)
+        area, average_intensity, x_centroid, y_centroid, min_brightness, max_brightness, verts = find_centroid(row, image, args.output, args.threshold, args.adjacent_elements)
         sunspots_df.at[index, 'area'] = area
+        sunspots_df.at[index, 'average_intensity'] = average_intensity
         sunspots_df.at[index, 'x_centroid'] = x_centroid
         sunspots_df.at[index, 'y_centroid'] = y_centroid
         sunspots_df.at[index, 'min_brightness'] = min_brightness
@@ -92,11 +93,6 @@ def open_fits_image(image_path, image_data_header_location):
     image_data = hdu_list[image_data_header_location].data
     return image_data
 
-def open_image(image_path):
-    print(f"Reading {image_path}")
-    image = cv2.imread(image_path)
-    return image
-
 def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     min_edges = adjacent_elements
     offset_x = int(sunspot['x'])
@@ -140,11 +136,21 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     # Find Area
     area_arr = np.count_nonzero(arr)
 
+    # Find Average Intensity
+    sunspot_values = []
+    for y in range(h):
+        for x in range(w):
+            if arr[y, x] > 0:
+                sunspot_values.append(im[y, x])
+    
+    average_intensity = sum(sunspot_values) / len(sunspot_values)
+    print(f"Average intensity: {average_intensity}")
+
     # Find Contours
     contour_arr = np.copy(arr)
     for y in range(h):
         for x in range(w):
-            if (arr[y, x] > 0):
+            if arr[y, x] > 0:
                  # Add up elements under threshold as edges
                 edges = 0
                 if x+1 > w-1 or arr[y, x+1] == 0:
@@ -182,7 +188,7 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     print(f"Sunspot {offset_x}, {offset_y}")
     print(arr)
 
-    return area_arr, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, vertices
+    return area_arr, average_intensity, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, vertices
 
 def save_output(sunspots_df, output_path):
     # Sort by area
