@@ -15,13 +15,14 @@ def main(args):
     centroids = []
 
     for index, row in sunspots_df.iterrows():
-        area, average_intensity, x_centroid, y_centroid, min_brightness, max_brightness, verts = find_centroid(row, image, args.output, args.threshold, args.adjacent_elements)
-        sunspots_df.at[index, 'area'] = area
-        sunspots_df.at[index, 'average_intensity'] = average_intensity
+        area, average_intensity, x_centroid, y_centroid, min_intensity, max_intensity, centroid_intensity, verts = find_centroid(row, image, args.output, args.threshold, args.adjacent_elements)
         sunspots_df.at[index, 'x_centroid'] = x_centroid
         sunspots_df.at[index, 'y_centroid'] = y_centroid
-        sunspots_df.at[index, 'min_brightness'] = min_brightness
-        sunspots_df.at[index, 'max_brightness'] = max_brightness
+        sunspots_df.at[index, 'area'] = area
+        sunspots_df.at[index, 'centroid_intensity'] = centroid_intensity
+        sunspots_df.at[index, 'average_intensity'] = average_intensity
+        sunspots_df.at[index, 'min_intensity'] = min_intensity
+        sunspots_df.at[index, 'max_intensity'] = max_intensity
 
         # For image marking
         for i in range(len(verts)):
@@ -77,11 +78,6 @@ def read_csv(csv_path):
         'y_2'
     ])
     df = df.rename(columns={"x_1": "x", "y_1": "y"})
-    df["area"] = 0
-    df["x_centroid"] = 0
-    df["y_centroid"] = 0
-    df["min_brightness"] = 0
-    df["max_brightness"] = 0
     df.sort_values('confidence')
     return df
 
@@ -183,12 +179,15 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     centroid_x = sum_x / n
     centroid_y = sum_y / n
 
+    # Find the brightness of the centroid pixel
+    centroid_value = im[int(centroid_y), int(centroid_x)]
+
     # Print data
     np.set_printoptions(precision=2, linewidth=200)
     print(f"Sunspot {offset_x}, {offset_y}")
     print(arr)
 
-    return area_arr, average_intensity, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, vertices
+    return area_arr, average_intensity, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, centroid_value, vertices
 
 def save_output(sunspots_df, output_path):
     # Sort by area
