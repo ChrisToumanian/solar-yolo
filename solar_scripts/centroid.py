@@ -1,3 +1,8 @@
+# ==========================================================================================
+# Convert relative coordinates from Yolov5 to pixels
+# Maintainers: Christopher Toumanian, cct_580@usc.edu
+#              Jimmy Wen, jswen@usc.edu
+# ==========================================================================================
 import os
 import sys
 import argparse
@@ -8,6 +13,9 @@ import re
 import matplotlib.pyplot as plt
 from astropy.io import fits
 
+# ==========================================================================================
+# Main & Arguments
+# ==========================================================================================
 def main(args):
     sunspots_df = read_csv(args.csv)
     image = open_fits_image(args.image, args.fits_header)
@@ -15,7 +23,7 @@ def main(args):
     centroids = []
 
     for index, row in sunspots_df.iterrows():
-        area, average_intensity, x_centroid, y_centroid, min_intensity, max_intensity, centroid_intensity, verts = find_centroid(row, image, args.output, args.threshold, args.adjacent_elements)
+        area, average_intensity, x_centroid, y_centroid, min_intensity, max_intensity, centroid_intensity, verts = get_sunspot_metrics(row, image, args.output, args.threshold, args.adjacent_elements)
         sunspots_df.at[index, 'x_centroid'] = x_centroid
         sunspots_df.at[index, 'y_centroid'] = y_centroid
         sunspots_df.at[index, 'area'] = area
@@ -35,24 +43,6 @@ def main(args):
         save_image(vertices, centroids, image, args.output)
     save_output(sunspots_df, args.output)
 
-def save_image(vertices, centroids, fits_image, output_path):
-    # Convert image to 0-255 RGB
-    filepath = f"{output_path.rsplit('.', 1)[0]}.png"
-    plt.imsave(filepath, fits_image, cmap='gray', vmin=np.nanmin(fits_image), vmax=np.nanmax(fits_image))
-    image = cv2.imread(filepath)
-
-    # Draw vertices on cropped image as blue pixels
-    for i in range(len(vertices)):
-        image[vertices[i][1]][vertices[i][0]] = [255, 0, 0]
-    
-    # Draw centroid on cropped image as a red pixel
-    for i in range(len(centroids)):
-        image[centroids[i][1]][centroids[i][0]] = [0, 0, 255]
-
-    # Save image
-    print(f"Saving {filepath}")
-    cv2.imwrite(filepath, image)
-
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--csv", help="Input CSV file", type=str, required=True)
@@ -67,6 +57,9 @@ def parse_arguments():
     args = parser.parse_args()
     return args
 
+# ==========================================================================================
+# I/O
+# ==========================================================================================
 def read_csv(csv_path):
     print(f"Reading {csv_path}")
     df = pd.read_csv(csv_path)
@@ -90,28 +83,74 @@ def open_fits_image(image_path, image_data_header_location):
     hdu_list.info()
     image_data = hdu_list[image_data_header_location].data
     return image_data
+    
+def save_output(sunspots_df, output_path):
+    # Sort by specified parameter
+    sunspots_df = sunspots_df.sort_values(args.sort_by, ascending=args.ascending)
+    print(f"Saving {output_path}")
+    print(sunspots_df)
+    sunspots_df.to_csv(output_path, index=False)
 
-def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
-    min_edges = adjacent_elements
+def save_image(vertices, centroids, fits_image, output_path):
+    # Convert image to 0-255 RGB
+    filepath = f"{output_path.rsplit('.', 1)[0]}.png"
+    plt.imsave(filepath, fits_image, cmap='gray', vmin=np.nanmin(fits_image), vmax=np.nanmax(fits_image))
+    image = cv2.imread(filepath)
+
+    # Draw vertices on cropped image as blue pixels
+    for i in range(len(vertices)):
+        image[vertices[i][1]][vertices[i][0]] = [255, 0, 0]
+    
+    # Draw centroid on cropped image as a red pixel
+    for i in range(len(centroids)):
+        image[centroids[i][1]][centroids[i][0]] = [0, 0, 255]
+
+    # Save image
+    print(f"Saving {filepath}")
+    cv2.imwrite(filepath, image)
+
+# ==========================================================================================
+# Sunspot calculations
+# ==========================================================================================
+def get_sunspot_metrics(sunspot, image, output_path, threshold, min_adjacent_elements):
     offset_x = int(sunspot['x'])
     offset_y = int(sunspot['y'])
-    w = int(sunspot["width"])
-    h = int(sunspot["height"])
-    image_width, image_height = image.shape
+    width = int(sunspot["width"])
+    height = int(sunspot["height"])
     
-    print(image[1000, 1000])
-
     # Crop image
-    im = image[offset_y:offset_y+h, offset_x:offset_x+w]
+    cropped_image = image[offset_y:offset_y + height, offset_x:offset_x + width]
 
+    # Binarize image cutoff by threshold, normalize and invert
+    sunspot_arr, min_value, max_value = binarize_image(cropped_image, threshold, width)
+
+    # Find sunspot area
+    area = np.count_nonzero(sunspot_arr)
+
+    # Find average intensity within the sunspot
+    average_intensity = find_average_intensity(sunspot_arr, cropped_image, width, height)
+
+    # Find centroid
+    centroid_x, centroid_y, vertices = find_centroid(sunspot_arr, min_adjacent_elements, width, height)
+
+    # Find intensity of the centroid
+    centroid_intensity = cropped_image[int(centroid_y), int(centroid_x)]
+
+    # Print sunspot
+    np.set_printoptions(precision=2, linewidth=200)
+    print(f"Sunspot {offset_x}, {offset_y}")
+    print(sunspot_arr)
+
+    return area, average_intensity, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, centroid_intensity, vertices
+
+def binarize_image(image, threshold, width):
     # List single values from RGBA pixels
-    pixel_data = []
-    for x in range(0, im.shape[0]):
-        for y in range(0, im.shape[1]):
-            pixel_data.append(im[x, y])
+    data = []
+    for x in range(0, image.shape[0]):
+        for y in range(0, image.shape[1]):
+            data.append(image[x, y])
 
-    # Min-max normalize
-    data = pixel_data
+    # Min-max normalize into percentages
     min_value = min(data)
     max_value = max(data)
     print(f"Min/Max values: {min_value}, {max_value}")
@@ -127,77 +166,56 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     for i in range(len(data)):
         if data[i] < threshold:
             data[i] = 0
+        else:
+            data[i] = 1
 
-    # Reshape to 2D array
-    arr = np.reshape(data, (-1, w))
+    # Return 2D array
+    return np.reshape(data, (-1, width)), min_value, max_value
 
-    # Find Area
-    area_arr = np.count_nonzero(arr)
-
-    # Find Average Intensity within the Area
-    sunspot_values = []
-    for y in range(h):
-        for x in range(w):
-            if arr[y, x] > 0:
-                sunspot_values.append(im[y, x])
-    
-    average_intensity = sum(sunspot_values) / len(sunspot_values)
-    print(f"Average intensity: {average_intensity}")
-
-    # Find Contours
-    contour_arr = np.copy(arr)
-    for y in range(h):
-        for x in range(w):
-            if arr[y, x] > 0:
-                 # Add up elements under threshold as edges
-                edges = 0
-                if x+1 > w-1 or arr[y, x+1] == 0:
-                    edges += 1
-                if x-1 < 0 or arr[y, x-1] == 0:
-                    edges += 1
-                if y+1 > h-1 or arr[y+1, x] == 0:
-                    edges += 1
-                if y-1 < 0 or arr[y-1, x] == 0:
-                    edges += 1
-
-                # Select element as contour if it has enough edges
-                if edges >= min_edges:
-                    contour_arr[y, x] = 1
-                else:
-                    contour_arr[y, x] = 0
-
-    # Create vertices from contour
+def find_centroid(sunspot_arr, min_adjacent_elements, w, h):
+    # Find vertices
     vertices = []
     for y in range(h):
         for x in range(w):
-            if contour_arr[y, x] == 1:
-                vertices.append((x, y))
+            if sunspot_arr[y, x] > 0:
+                 # Add up adjacent elements under threshold
+                adjacent_null_elements = 0
+                if x+1 > w-1 or sunspot_arr[y, x+1] == 0:
+                    adjacent_null_elements += 1
+                if x-1 < 0 or sunspot_arr[y, x-1] == 0:
+                    adjacent_null_elements += 1
+                if y+1 > h-1 or sunspot_arr[y+1, x] == 0:
+                    adjacent_null_elements += 1
+                if y-1 < 0 or sunspot_arr[y-1, x] == 0:
+                    adjacent_null_elements += 1
 
-    # # Count vertices and denote number by n
+                # Select element as contour if it has enough null adjacent elements
+                if adjacent_null_elements >= min_adjacent_elements:
+                    vertices.append((x, y))
+
+    # Find centroid position
+    # Count vertices and denote number by n. Sum x & y values from vertices and divide by n
     n = len(vertices)
-
-    # # Add x & y values from vertices and divide by sum of n
     sum_x, sum_y = [ sum(row[i] for row in vertices) for i in range(len(vertices[0])) ]
     centroid_x = sum_x / n
     centroid_y = sum_y / n
 
-    # Find the brightness of the centroid pixel
-    centroid_value = im[int(centroid_y), int(centroid_x)]
+    return centroid_x, centroid_y, vertices
 
-    # Print data
-    np.set_printoptions(precision=2, linewidth=200)
-    print(f"Sunspot {offset_x}, {offset_y}")
-    print(arr)
+def find_average_intensity(sunspot_arr, image, w, h):
+    vals = []
+    for y in range(h):
+        for x in range(w):
+            if sunspot_arr[y, x] > 0:
+                vals.append(image[y, x])
+    
+    average_intensity = sum(vals) / len(vals)
 
-    return area_arr, average_intensity, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, centroid_value, vertices
+    return average_intensity
 
-def save_output(sunspots_df, output_path):
-    # Sort by specified parameter
-    sunspots_df = sunspots_df.sort_values(args.sort_by, ascending=args.ascending)
-    print(f"Saving {output_path}")
-    print(sunspots_df)
-    sunspots_df.to_csv(output_path, index=False)
-
+# ==========================================================================================
+# Entry
+# ==========================================================================================
 if __name__ == '__main__':
     args = parse_arguments()
     main(args)
