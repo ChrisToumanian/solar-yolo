@@ -8,7 +8,6 @@ from argparse import ArgumentParser
 
 # ==========================================================================================
 # Arguments
-# Example: python convert_coordinates.py -f runs/detect/exp/labels/bus.txt -o runs/detect/exp/labels/bus.csv -w 810 -h 1080 -v -H -d ","
 # ==========================================================================================
 def parse_arguments():
     parser = ArgumentParser(add_help=False)
