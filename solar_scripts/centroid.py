@@ -60,8 +60,10 @@ def parse_arguments():
     parser.add_argument("-o", "--output", help="Output CSV file", type=str, required=True)
     parser.add_argument("-v", "--output_centroid_image", help="Output image of vertices and centroids", action='store_true')
     parser.add_argument("-t", "--threshold", help="Threshold between sunspot and photosphere", type=float, required=False, default=0.3)
-    parser.add_argument("-a", "--adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=2)
+    parser.add_argument("-n", "--adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=2)
     parser.add_argument("-f", "--fits_header", help="Header location of image data in fits file", type=int, required=False, default=0)
+    parser.add_argument("-s", "--sort_by", help="Sort output by a specified parameter", type=str, required=False, default="area")
+    parser.add_argument("-a", "--ascending", help="Sort ascending", action='store_true')
     args = parser.parse_args()
     return args
 
@@ -132,7 +134,7 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     # Find Area
     area_arr = np.count_nonzero(arr)
 
-    # Find Average Intensity
+    # Find Average Intensity within the Area
     sunspot_values = []
     for y in range(h):
         for x in range(w):
@@ -190,8 +192,8 @@ def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     return area_arr, average_intensity, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, centroid_value, vertices
 
 def save_output(sunspots_df, output_path):
-    # Sort by area
-    sunspots_df = sunspots_df.sort_values('area', ascending=False)
+    # Sort by specified parameter
+    sunspots_df = sunspots_df.sort_values(args.sort_by, ascending=args.ascending)
     print(f"Saving {output_path}")
     print(sunspots_df)
     sunspots_df.to_csv(output_path, index=False)
