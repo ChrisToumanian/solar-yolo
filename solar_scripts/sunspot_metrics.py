@@ -1,5 +1,5 @@
 # ==========================================================================================
-# Convert relative coordinates from Yolov5 to pixels
+# Calculate sunspot metrics
 # Maintainers: Christopher Toumanian, cct_580@usc.edu
 #              Jimmy Wen, jswen@usc.edu
 # ==========================================================================================
