@@ -144,7 +144,7 @@ def get_sunspot_metrics(sunspot, image, output_path, threshold, min_adjacent_ele
     return area, average_intensity, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, centroid_intensity, vertices
 
 def binarize_image(image, threshold, width):
-    # List single values from RGBA pixels
+    # List single values from image
     data = []
     for x in range(0, image.shape[0]):
         for y in range(0, image.shape[1]):
