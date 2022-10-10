@@ -92,11 +92,6 @@ def open_fits_image(image_path, image_data_header_location):
     image_data = hdu_list[image_data_header_location].data
     return image_data
 
-def open_image(image_path):
-    print(f"Reading {image_path}")
-    image = cv2.imread(image_path)
-    return image
-
 def find_centroid(sunspot, image, output_path, threshold, adjacent_elements):
     min_edges = adjacent_elements
     offset_x = int(sunspot['x'])
