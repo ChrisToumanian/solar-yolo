@@ -94,7 +94,7 @@ def save_output(sunspots_df, output_path):
     sunspots_df.to_csv(output_path, index=False)
 
 def save_image(vertices, centroids, fits_image, output_path):
-    # Convert image to 0-255 RGB
+    # Convert image to 0-255
     filepath = f"{output_path.rsplit('.', 1)[0]}.png"
     plt.imsave(filepath, fits_image, cmap='gray', vmin=np.nanmin(fits_image), vmax=np.nanmax(fits_image))
     image = cv2.imread(filepath)
@@ -177,7 +177,6 @@ def find_centroid(sunspot_arr, min_adjacent_elements, max_adjacent_elements, w, 
     vertices = []
 
     # Find vertices by summing adjacent elements using convolution
-    #h_hv_filter = np.array([[1,1,1], [1,0,1], [1,1,1]]) # up, down, left, right, and diagonals
     h_hv_filter = np.array([ # weighted sum
         [0.25, 0.25, 0.25, 0.25, 0.25],
         [0.25, 0.50, 0.50, 0.50, 0.25],
