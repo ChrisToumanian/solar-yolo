@@ -200,9 +200,13 @@ def find_centroid(sunspot_arr, min_adjacent_elements, max_adjacent_elements, w, 
     # Find centroid position
     # Count vertices and denote number by n. Sum x & y values from vertices and divide by n
     n = len(vertices)
-    sum_x, sum_y = [ sum(row[i] for row in vertices) for i in range(len(vertices[0])) ]
-    centroid_x = sum_x / n
-    centroid_y = sum_y / n
+    if n > 0:
+        sum_x, sum_y = [ sum(row[i] for row in vertices) for i in range(len(vertices[0])) ]
+        centroid_x = sum_x / n
+        centroid_y = sum_y / n
+    else:
+        centroid_x = 0
+        centroid_y = 0
 
     return centroid_x, centroid_y, vertices
 
