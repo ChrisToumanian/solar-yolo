@@ -51,8 +51,8 @@ def parse_arguments():
     parser.add_argument("-o", "--output", help="Output CSV file", type=str, required=True)
     parser.add_argument("-v", "--output_centroid_image", help="Output image of vertices and centroids", action='store_true')
     parser.add_argument("-t", "--threshold", help="Threshold between sunspot and photosphere", type=float, required=False, default=0.562)
-    parser.add_argument("-n", "--min_adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=2)
-    parser.add_argument("-m", "--max_adjacent_elements", help="Maximum number of adjacent elements to set vertices", type=int, required=False, default=3)
+    parser.add_argument("-n", "--min_adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=3)
+    parser.add_argument("-m", "--max_adjacent_elements", help="Maximum number of adjacent elements to set vertices", type=int, required=False, default=4)
     parser.add_argument("-f", "--fits_header", help="Header location of image data in fits file", type=int, required=False, default=0)
     parser.add_argument("-s", "--sort_by", help="Sort output by a specified parameter", type=str, required=False, default="area")
     parser.add_argument("-a", "--ascending", help="Sort ascending", action='store_true')
@@ -94,7 +94,7 @@ def save_output(sunspots_df, output_path):
     sunspots_df.to_csv(output_path, index=False)
 
 def save_image(vertices, centroids, fits_image, output_path):
-    # Convert image to 0-255 RGB
+    # Convert image to 0-255
     filepath = f"{output_path.rsplit('.', 1)[0]}.png"
     plt.imsave(filepath, fits_image, cmap='gray', vmin=np.nanmin(fits_image), vmax=np.nanmax(fits_image))
     image = cv2.imread(filepath)
@@ -177,10 +177,17 @@ def find_centroid(sunspot_arr, min_adjacent_elements, max_adjacent_elements, w, 
     vertices = []
 
     # Find vertices by summing adjacent elements using convolution
-    h_hv_filter = np.array([[1,1,1], [1,0,1], [1,1,1]]) # up, down, left, right, and diagonals
+    h_hv_filter = np.array([ # weighted sum
+        [0.25, 0.25, 0.25, 0.25, 0.25],
+        [0.25, 0.50, 0.50, 0.50, 0.25],
+        [0.25, 0.50, 0.00, 0.50, 0.25],
+        [0.25, 0.50, 0.50, 0.50, 0.25],
+        [0.25, 0.25, 0.25, 0.25, 0.25]
+    ])
     convolved_arr = scipy.signal.convolve2d(sunspot_arr, h_hv_filter, mode='same')
 
     # Print convolved array
+    print(sunspot_arr)
     print(convolved_arr)
 
     # Find vertices in convolved array between 1 and min & max adjacent elements
