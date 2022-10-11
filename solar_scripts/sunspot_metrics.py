@@ -188,6 +188,7 @@ def find_centroid(sunspot_arr, min_adjacent_elements, max_adjacent_elements, w, 
 
     # Print convolved array
     print(sunspot_arr)
+    np.set_printoptions(formatter={'float': '{: 0.1f}'.format}, linewidth=100000)
     print(convolved_arr)
 
     # Find vertices in convolved array between 1 and min & max adjacent elements
