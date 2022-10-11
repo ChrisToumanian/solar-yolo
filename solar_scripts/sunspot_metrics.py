@@ -24,7 +24,7 @@ def main(args):
     centroids = []
 
     for index, row in sunspots_df.iterrows():
-        area, average_intensity, x_centroid, y_centroid, min_intensity, max_intensity, centroid_intensity, verts = get_sunspot_metrics(row, image, args.output, args.threshold, args.min_adjacent_elements, args.max_adjacent_elements)
+        area, average_intensity, x_centroid, y_centroid, min_intensity, max_intensity, centroid_intensity, verts = get_sunspot_metrics(row, image, args.output, args.threshold, args.min_conv_sum, args.max_conv_sum)
         sunspots_df.at[index, 'x_centroid'] = x_centroid
         sunspots_df.at[index, 'y_centroid'] = y_centroid
         sunspots_df.at[index, 'area'] = area
@@ -51,8 +51,8 @@ def parse_arguments():
     parser.add_argument("-o", "--output", help="Output CSV file", type=str, required=True)
     parser.add_argument("-v", "--output_centroid_image", help="Output image of vertices and centroids", action='store_true')
     parser.add_argument("-t", "--threshold", help="Threshold between sunspot and photosphere", type=float, required=False, default=0.562)
-    parser.add_argument("-n", "--min_adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=3)
-    parser.add_argument("-m", "--max_adjacent_elements", help="Maximum number of adjacent elements to set vertices", type=int, required=False, default=4)
+    parser.add_argument("-n", "--min_conv_sum", help="Minimum convolution sum to set vertices", type=int, required=False, default=3)
+    parser.add_argument("-m", "--max_conv_sum", help="Maximum convolution sum to set vertices", type=int, required=False, default=5)
     parser.add_argument("-f", "--fits_header", help="Header location of image data in fits file", type=int, required=False, default=0)
     parser.add_argument("-s", "--sort_by", help="Sort output by a specified parameter", type=str, required=False, default="area")
     parser.add_argument("-a", "--ascending", help="Sort ascending", action='store_true')
@@ -114,7 +114,7 @@ def save_image(vertices, centroids, fits_image, output_path):
 # ==========================================================================================
 # Sunspot calculations
 # ==========================================================================================
-def get_sunspot_metrics(sunspot, image, output_path, threshold, min_adjacent_elements, max_adjacent_elements):
+def get_sunspot_metrics(sunspot, image, output_path, threshold, min_conv_sum, max_conv_sum):
     offset_x = int(sunspot['x'])
     offset_y = int(sunspot['y'])
     width = int(sunspot["width"])
@@ -133,7 +133,7 @@ def get_sunspot_metrics(sunspot, image, output_path, threshold, min_adjacent_ele
     average_intensity = find_average_intensity(sunspot_arr, cropped_image, width, height)
 
     # Find centroid
-    centroid_x, centroid_y, vertices = find_centroid(sunspot_arr, min_adjacent_elements, max_adjacent_elements, width, height)
+    centroid_x, centroid_y, vertices = find_centroid(sunspot_arr, min_conv_sum, max_conv_sum, width, height)
 
     # Find intensity of the centroid
     centroid_intensity = cropped_image[int(centroid_y), int(centroid_x)]
@@ -173,14 +173,14 @@ def binarize_image(image, threshold, width):
     # Return 2D array
     return np.reshape(data, (-1, width)), min_value, max_value
 
-def find_centroid(sunspot_arr, min_adjacent_elements, max_adjacent_elements, w, h):
+def find_centroid(sunspot_arr, min_conv_sum, max_conv_sum, w, h):
     vertices = []
 
     # Find vertices by summing adjacent elements using convolution
     h_hv_filter = np.array([ # weighted sum
         [0.25, 0.25, 0.25, 0.25, 0.25],
         [0.25, 0.50, 0.50, 0.50, 0.25],
-        [0.25, 0.50, 0.00, 0.50, 0.25],
+        [0.25, 0.50, 1.00, 0.50, 0.25],
         [0.25, 0.50, 0.50, 0.50, 0.25],
         [0.25, 0.25, 0.25, 0.25, 0.25]
     ])
@@ -194,7 +194,7 @@ def find_centroid(sunspot_arr, min_adjacent_elements, max_adjacent_elements, w, 
     # Find vertices in convolved array between 1 and min & max adjacent elements
     for y in range(h):
         for x in range(w):
-            if convolved_arr[y, x] >= min_adjacent_elements and convolved_arr[y, x] <= max_adjacent_elements:
+            if convolved_arr[y, x] >= min_conv_sum and convolved_arr[y, x] <= max_conv_sum:
                 vertices.append((x, y))
 
     # Find centroid position
