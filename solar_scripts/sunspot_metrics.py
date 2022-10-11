@@ -11,6 +11,7 @@ import numpy as np
 import cv2
 import re
 import matplotlib.pyplot as plt
+import scipy.signal
 from astropy.io import fits
 
 # ==========================================================================================
@@ -23,7 +24,7 @@ def main(args):
     centroids = []
 
     for index, row in sunspots_df.iterrows():
-        area, average_intensity, x_centroid, y_centroid, min_intensity, max_intensity, centroid_intensity, verts = get_sunspot_metrics(row, image, args.output, args.threshold, args.adjacent_elements)
+        area, average_intensity, x_centroid, y_centroid, min_intensity, max_intensity, centroid_intensity, verts = get_sunspot_metrics(row, image, args.output, args.threshold, args.min_adjacent_elements, args.max_adjacent_elements)
         sunspots_df.at[index, 'x_centroid'] = x_centroid
         sunspots_df.at[index, 'y_centroid'] = y_centroid
         sunspots_df.at[index, 'area'] = area
@@ -49,8 +50,9 @@ def parse_arguments():
     parser.add_argument("-i", "--image", help="Input fits image file", type=str, required=True)
     parser.add_argument("-o", "--output", help="Output CSV file", type=str, required=True)
     parser.add_argument("-v", "--output_centroid_image", help="Output image of vertices and centroids", action='store_true')
-    parser.add_argument("-t", "--threshold", help="Threshold between sunspot and photosphere", type=float, required=False, default=0.3)
-    parser.add_argument("-n", "--adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=2)
+    parser.add_argument("-t", "--threshold", help="Threshold between sunspot and photosphere", type=float, required=False, default=0.562)
+    parser.add_argument("-n", "--min_adjacent_elements", help="Minimum number of adjacent elements to set vertices", type=int, required=False, default=2)
+    parser.add_argument("-m", "--max_adjacent_elements", help="Maximum number of adjacent elements to set vertices", type=int, required=False, default=3)
     parser.add_argument("-f", "--fits_header", help="Header location of image data in fits file", type=int, required=False, default=0)
     parser.add_argument("-s", "--sort_by", help="Sort output by a specified parameter", type=str, required=False, default="area")
     parser.add_argument("-a", "--ascending", help="Sort ascending", action='store_true')
@@ -112,7 +114,7 @@ def save_image(vertices, centroids, fits_image, output_path):
 # ==========================================================================================
 # Sunspot calculations
 # ==========================================================================================
-def get_sunspot_metrics(sunspot, image, output_path, threshold, min_adjacent_elements):
+def get_sunspot_metrics(sunspot, image, output_path, threshold, min_adjacent_elements, max_adjacent_elements):
     offset_x = int(sunspot['x'])
     offset_y = int(sunspot['y'])
     width = int(sunspot["width"])
@@ -131,7 +133,7 @@ def get_sunspot_metrics(sunspot, image, output_path, threshold, min_adjacent_ele
     average_intensity = find_average_intensity(sunspot_arr, cropped_image, width, height)
 
     # Find centroid
-    centroid_x, centroid_y, vertices = find_centroid(sunspot_arr, min_adjacent_elements, width, height)
+    centroid_x, centroid_y, vertices = find_centroid(sunspot_arr, min_adjacent_elements, max_adjacent_elements, width, height)
 
     # Find intensity of the centroid
     centroid_intensity = cropped_image[int(centroid_y), int(centroid_x)]
@@ -139,7 +141,6 @@ def get_sunspot_metrics(sunspot, image, output_path, threshold, min_adjacent_ele
     # Print sunspot
     np.set_printoptions(precision=2, linewidth=200)
     print(f"Sunspot {offset_x}, {offset_y}")
-    print(sunspot_arr)
 
     return area, average_intensity, offset_x + centroid_x, offset_y + centroid_y, min_value, max_value, centroid_intensity, vertices
 
@@ -172,26 +173,21 @@ def binarize_image(image, threshold, width):
     # Return 2D array
     return np.reshape(data, (-1, width)), min_value, max_value
 
-def find_centroid(sunspot_arr, min_adjacent_elements, w, h):
-    # Find vertices
+def find_centroid(sunspot_arr, min_adjacent_elements, max_adjacent_elements, w, h):
     vertices = []
+
+    # Find vertices by summing adjacent elements using convolution
+    h_hv_filter = np.array([[1,1,1], [1,0,1], [1,1,1]]) # up, down, left, right, and diagonals
+    convolved_arr = scipy.signal.convolve2d(sunspot_arr, h_hv_filter, mode='same')
+
+    # Print convolved array
+    print(convolved_arr)
+
+    # Find vertices in convolved array between 1 and min & max adjacent elements
     for y in range(h):
         for x in range(w):
-            if sunspot_arr[y, x] > 0:
-                 # Add up adjacent elements under threshold
-                adjacent_null_elements = 0
-                if x+1 > w-1 or sunspot_arr[y, x+1] == 0:
-                    adjacent_null_elements += 1
-                if x-1 < 0 or sunspot_arr[y, x-1] == 0:
-                    adjacent_null_elements += 1
-                if y+1 > h-1 or sunspot_arr[y+1, x] == 0:
-                    adjacent_null_elements += 1
-                if y-1 < 0 or sunspot_arr[y-1, x] == 0:
-                    adjacent_null_elements += 1
-
-                # Select element as contour if it has enough null adjacent elements
-                if adjacent_null_elements >= min_adjacent_elements:
-                    vertices.append((x, y))
+            if convolved_arr[y, x] >= min_adjacent_elements and convolved_arr[y, x] <= max_adjacent_elements:
+                vertices.append((x, y))
 
     # Find centroid position
     # Count vertices and denote number by n. Sum x & y values from vertices and divide by n
